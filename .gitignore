@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+.venv/
+logs/
+Results/
+data/
+*.jsonl
+gemma/
+=0.46.1
+
+# Model outputs are huge — ignore all, EXCEPT keep the v11 final adapter:
+output*/
+!output_v11/
+output_v11/checkpoint-*/
+output_v11/runs/
+
+# local installer — never commit (155MB, exceeds GitHub 100MB limit)
+Miniconda3-*.sh
+
+# keep repo minimal — only output_v11 + inference.py + requirements.txt tracked
+train.py
+todozee_serving.py
+main.py
+pyproject.toml
+uv.lock
+.python-version
+results_batch*.json
+test_v11_batch*.json

@@ -1,0 +1,18 @@
+{
+  "version": "v11",
+  "samples": 14852,
+  "tasks": 19,
+  "epochs": 4,
+  "lr": 0.0003,
+  "lora_r": 32,
+  "lora_alpha": 64,
+  "lora_dropout": 0.1,
+  "batch_size": 128,
+  "changes_from_v10": [
+    "Smart Scheduling task removed",
+    "4621 duplicates removed",
+    "41 mislabelled Astrology rows fixed",
+    "574 Fast Route hallucinated From/To values blanked",
+    "+200 Weather, +100 CricketBuzz, +80 Chef rows"
+  ]
+}

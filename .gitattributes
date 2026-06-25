@@ -1,0 +1,2 @@
+*.safetensors filter=lfs diff=lfs merge=lfs -text
+output_v9/adapter_model.safetensors filter=lfs diff=lfs merge=lfs -text
