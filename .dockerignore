@@ -1,0 +1,21 @@
+# Keep the build context small & reproducible
+.git
+.github
+__pycache__/
+*.pyc
+.venv/
+venv/
+logs/
+Results/
+results_batch*.json
+test_v11_batch*.json
+*.jsonl
+data/
+gemma/
+Miniconda3-*.sh
+output_v11/checkpoint-*/
+output_v11/runs/
+DEPLOY.md
+README.md
+*.md
+!output_v11/README.md

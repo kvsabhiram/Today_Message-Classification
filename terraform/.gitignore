@@ -1,0 +1,25 @@
+# Local provider cache / plugins (large binaries — never commit)
+**/.terraform/*
+
+# State files (live in S3) and any local state
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Real variable files may hold secrets — keep only the examples
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+
+# Crash logs / overrides
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Dependency lock is platform-specific here (generated on Windows); let CI
+# regenerate it on Linux. Commit it later via `terraform providers lock` for
+# multiple platforms if you want reproducible provider versions.
+.terraform.lock.hcl

@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars. The bucket name must be globally unique across all AWS.
+state_bucket_name = "todozee-tfstate-CHANGE-ME-12345"
+lock_table_name   = "todozee-tf-locks"
+aws_region        = "ap-south-1"

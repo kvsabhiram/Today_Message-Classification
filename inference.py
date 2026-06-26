@@ -28,10 +28,15 @@ logger = logging.getLogger(__name__)
 #              CONFIG
 # ==============================================================
 
-ADAPTER_PATH        = "/home/test/Documents/ToDoZee/todo_zee_qwen/output_v11"
-BASE_MODEL          = "Qwen/Qwen2.5-3B"
-MAX_NEW_TOKENS      = 120
-MERGE_ADAPTER       = True
+# Paths/config are env-driven so the same image runs anywhere (CI, EC2, local).
+# ADAPTER_PATH defaults to ./output_v11 next to this file.
+_HERE               = os.path.dirname(os.path.abspath(__file__))
+ADAPTER_PATH        = os.environ.get("ADAPTER_PATH", os.path.join(_HERE, "output_v11"))
+BASE_MODEL          = os.environ.get("BASE_MODEL", "Qwen/Qwen2.5-3B")
+MAX_NEW_TOKENS      = int(os.environ.get("MAX_NEW_TOKENS", "120"))
+MERGE_ADAPTER       = os.environ.get("MERGE_ADAPTER", "1") == "1"
+HOST                = os.environ.get("HOST", "0.0.0.0")
+PORT                = int(os.environ.get("PORT", "5011"))
 
 USE_MODEL                    = True
 USE_ROUTING_AS_FALLBACK      = True
@@ -621,7 +626,7 @@ async def batch_classify(request: BatchRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5011)
+    uvicorn.run(app, host=HOST, port=PORT)
 
 # import os
 # import json
