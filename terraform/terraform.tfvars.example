@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars and adjust. All values have sensible defaults.
+
+aws_region    = "ap-south-1"
+instance_type = "g5.xlarge"
+
+# Lock the app port down to your IP for safety, e.g. "203.0.113.4/32".
+# allowed_cidr = "0.0.0.0/0"
+
+# Your GitHub repo for OIDC trust.
+github_repo = "kvsabhiram/Today_Message-Classification"
+
+# Set false if your AWS account ALREADY has a GitHub OIDC provider.
+create_github_oidc_provider = true
+
+# Optional: SSH key pair name. Leave empty to rely on SSM Session Manager.
+# ssh_key_name = "my-keypair"
+
+# Optional: pin a Deep Learning Base GPU AMI (driver preinstalled) instead of plain Ubuntu.
+# ami_id = "ami-xxxxxxxxxxxxxxxxx"

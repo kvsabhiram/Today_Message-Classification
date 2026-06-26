@@ -1,0 +1,119 @@
+name: Terraform Plan (PR)
+
+# Runs fmt/validate/plan on pull requests touching terraform/ and posts the plan
+# as a sticky PR comment. Read-only: assumes the dedicated plan role and runs
+# `plan -lock=false` so it never writes state or takes a DynamoDB lock.
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform-plan.yml"
+
+permissions:
+  contents: read
+  id-token: write        # AWS OIDC
+  pull-requests: write   # post the plan comment
+
+env:
+  AWS_REGION: ap-south-1
+  TF_WORKDIR: terraform
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKDIR }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Configure AWS credentials (OIDC, read-only)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform fmt
+        id: fmt
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+
+      - name: Terraform init
+        id: init
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan
+        id: plan
+        run: terraform plan -no-color -input=false -lock=false
+        continue-on-error: true
+
+      - name: Comment plan on PR
+        uses: actions/github-script@v7
+        env:
+          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        with:
+          script: |
+            const fmt = '${{ steps.fmt.outcome }}';
+            const init = '${{ steps.init.outcome }}';
+            const validate = '${{ steps.validate.outcome }}';
+            const plan = '${{ steps.plan.outcome }}';
+            // Truncate to stay under GitHub's 65k comment limit.
+            let planText = process.env.PLAN || '';
+            if (planText.length > 60000) {
+              planText = planText.slice(0, 60000) + '\n... (truncated, see Action logs)';
+            }
+            const body = [
+              '## Terraform Plan',
+              '',
+              `| Step | Result |`,
+              `| --- | --- |`,
+              `| fmt | \`${fmt}\` |`,
+              `| init | \`${init}\` |`,
+              `| validate | \`${validate}\` |`,
+              `| plan | \`${plan}\` |`,
+              '',
+              '<details><summary>Show plan output</summary>',
+              '',
+              '```hcl',
+              planText,
+              '```',
+              '',
+              '</details>',
+              '',
+              `_Workflow: \`${context.workflow}\` · commit \`${context.sha.slice(0,7)}\`_`,
+            ].join('\n');
+
+            const marker = '## Terraform Plan';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body && c.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Fail if plan errored
+        if: steps.plan.outcome == 'failure'
+        run: echo "terraform plan failed" && exit 1
