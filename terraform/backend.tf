@@ -11,7 +11,7 @@
 # can't corrupt the state file; it also stores a state digest for consistency.
 terraform {
   backend "s3" {
-    bucket         = "todozee-tfstate-CHANGE-ME-12345" # must match bootstrap output
+    bucket         = "todozee-tfstate-637560253183" # created by ./bootstrap
     key            = "todozee/classifier.tfstate"
     region         = "ap-south-1"
     dynamodb_table = "todozee-tf-locks"

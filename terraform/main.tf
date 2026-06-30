@@ -67,7 +67,7 @@ resource "aws_ecr_lifecycle_policy" "app" {
 # ---------------------------------------------------------------------------
 resource "aws_security_group" "app" {
   name_prefix = "${var.project}-sg-"
-  description = "ToDoZee classifier — app port + egress"
+  description = "ToDoZee classifier - app port + egress"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
