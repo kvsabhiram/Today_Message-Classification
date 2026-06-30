@@ -105,9 +105,21 @@ jobs:
             --parameters file://deploy-cmd.json \
             --query "Command.CommandId" --output text)
           echo "SSM command: $CMD_ID"
-          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" || true
+          # Poll to a terminal state ourselves: the built-in waiter caps at ~100s, but pulling the
+          # multi-GB image routinely takes longer, and `|| true` would mask a still-running/failed
+          # command -> the job would go green before the container was actually swapped. Wait up to
+          # ~10 min and fail the job unless the command finished Successfully.
+          STATUS=Pending
+          for i in $(seq 1 60); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" --query "Status" --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in Success|Failed|Cancelled|TimedOut) break ;; esac
+            sleep 10
+          done
           aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" \
             --query "{Status:Status,Out:StandardOutputContent,Err:StandardErrorContent}" --output json
+          if [ "$STATUS" != "Success" ]; then
+            echo "::error::Deploy SSM command did not succeed (status=$STATUS)"; exit 1
+          fi
 
       - name: Health check
         env:
@@ -125,6 +137,17 @@ jobs:
             --document-name "AWS-RunShellScript" \
             --parameters file://health-cmd.json \
             --query "Command.CommandId" --output text)
-          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" || true
+          # The on-box script exits 0 only once /health returns healthy (up to ~5 min), else exits 1.
+          # Poll to a terminal state and propagate it: a non-Success status here means the NEWLY
+          # deployed container never became healthy, so the deploy must fail.
+          STATUS=Pending
+          for i in $(seq 1 40); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" --query "Status" --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in Success|Failed|Cancelled|TimedOut) break ;; esac
+            sleep 10
+          done
           aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" \
             --query "{Status:Status,Out:StandardOutputContent}" --output json
+          if [ "$STATUS" != "Success" ]; then
+            echo "::error::Health check failed - deployed container did not become healthy (status=$STATUS)"; exit 1
+          fi
