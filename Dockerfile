@@ -9,10 +9,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/app/hf_cache \
     HF_HUB_DISABLE_TELEMETRY=1
 
-# Python 3.10 (matches .python-version) + git/git-lfs for any LFS-tracked weights + curl for healthcheck
+# Python 3.10 (matches .python-version) + git/git-lfs for any LFS-tracked weights + curl for healthcheck.
+# gcc/build-essential are REQUIRED: peft loads the LoRA adapter -> imports bitsandbytes -> triton,
+# which JIT-compiles a CUDA helper at model-load time and needs a C compiler. The cuda-runtime base
+# has none, so without this the server crashes on startup ("Failed to find C compiler").
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3.10 python3-pip python3.10-dev \
         git git-lfs curl ca-certificates \
+        gcc build-essential \
     && git lfs install \
     && ln -sf /usr/bin/python3.10 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/*
